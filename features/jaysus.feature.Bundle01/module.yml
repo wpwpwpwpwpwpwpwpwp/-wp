@@ -1,0 +1,9 @@
+name: jaysus.feature.Bundle01
+version: v1
+description: Alpha Effective and Smart Money
+deps:
+  - id: common.prepare.daily_kdata@v1
+    window: 200d
+#container:
+#  type: docker
+#  image_name: qe-runtime

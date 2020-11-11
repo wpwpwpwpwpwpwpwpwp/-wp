@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from enum import Enum
 from logging import getLogger
 from typing import *
@@ -12,6 +12,9 @@ from quant_engine.typing_ import *
 class TableNames(str, Enum):
     MAIN = 'main'
 
+    def __str__(self):
+        return self.value
+
 
 def select_hermes_columns_from_table(db: SqlDB,
                                      table_name: str,
@@ -22,93 +25,93 @@ def select_hermes_columns_from_table(db: SqlDB,
     columns = [f't."{a}" AS "{b}"' for a, b in column_mapping]
     if not columns:
         raise ValueError(f'`column_mapping` must not be empty.')
+    column_str = ',\n        '.join(columns)
 
     stmt = f'''
     SELECT
-        t."trade_date" AS "trade_date",
-        t2."security_id" AS "datayes_id",
-        t2."ticker_symbol" AS "datayes_code",
-        t2."sec_short_name" AS "sec_name",
-        {", ".join(columns)}
+        t."TRADE_DATE" AS "trade_date",
+        t2."SECURITY_ID" AS "datayes_id",
+        t2."TICKER_SYMBOL" AS "datayes_code",
+        t2."EXCHANGE_CD" AS "datayes_exchange_cd",
+        {column_str}
     FROM
         "{table_name}" AS t
     LEFT JOIN
         "md_security" AS t2
     ON
-        t.security_id = t2.security_id AND
-        t.trade_date >= %(start_time)s AND
-        t.trade_date < %(end_time)
+        t."SECURITY_ID" = t2."SECURITY_ID"
+    WHERE
+        t."TRADE_DATE" >= %(start_time)s AND
+        t."TRADE_DATE" < %(end_time)s
+    ORDER BY
+        t."TRADE_DATE" ASC,
+        t."SECURITY_ID" ASC
     ;
     '''
 
     with db.scoped_conn() as conn:
-        return pd.read_sql(
+        df = pd.read_sql(
             sql=stmt,
             con=conn,
             params={'start_time': start_time, 'end_time': end_time},
         )
+        return df
 
 
 def merge_hermes_daily_data(db: SqlDB,
                             start_time: Union[date, str],
                             end_time: Union[date, str]):
     table_column_mappings = [
-        ('mkt_equd', [
-            ('pre_close_price', 'exchange_pre_close_adj'),
-            ('act_pre_close_price', 'pre_close'),
-            ('highest_price', 'high'),
-            ('lowest_price', 'low'),
-            ('close_price', 'close'),
-            ('turnover_vol', 'volume'),
-            ('turnover_value', 'amount'),
-            ('deal_amount', 'deal_num'),
-            ('neg_market_value', 'mkt_freeshares'),
-            ('market_value', 'mkt_cap_ard'),
-            ('chg_pct', 'pct_chg'),
-            ('turnover_rate', 'turn'),
-        ]),
-        ('mkt_equd_adj', [
-            ('pre_close_price_1', 'pre_close_adj'),
-            ('open_price_1', 'open_adj'),
-            ('high_price_1', 'high_adj'),
-            ('low_price_1', 'low_adj'),
-            ('close_price_1', 'close_adj'),
-            ('turnover_vol', 'volume_adj'),
-        ]),
-        ('mkt_equd_eval', [
-            ('pe_t', 'pe_ttm'),
-            ('pe_m', 'pe_mrq'),
-            ('pe_cm', 'pe_deducted_mrq'),
-            ('pb', 'pb_lf'),
-            ('ps_t', 'ps_ttm'),
-            ('ps_m', 'ps_mrq'),
-            ('pcf_t', 'pcf_ncf_ttm'),
-            ('pcf_m', 'pcf_ncf_mrq'),
-            ('pcf_ot', 'pcf_ocf_ttm'),
-            ('pcf_om', 'pcf_ocf_mrq'),
-            ('ev', 'ev'),
-            ('ev_ebitda', 'ev_2_ebitda'),
-            ('ev_sales', 'ev_2_sales_ttm'),
-        ]),
-        ('mkt_equd_ind', [
-            ('chg_status', 'trade_status'),
-            ('con_chg', 'con_chg'),
-            ('con_limit', 'con_limit'),
-            ('days_1', 'days_2_highest'),
-            ('days_2', 'days_new_highest'),
-            ('days_3', 'days_2_lowest'),
-            ('days_4', 'days_new_lowest'),
-            ('deal_value', 'deal_value'),
-        ]),
-        ('mkt_limit', [
-            ('limit_up_price', 'limit_up'),
-            ('limit_down_price', 'limit_down'),
-            ('up_limit_reached_times', 'up_limit_reached_times'),
-            ('down_limit_reached_times', 'down_limit_reached_times'),
-        ]),
-        ('mkt_eqy_vwapd', [
-            ('vwap', 'vwap'),
-        ])
+        ('mkt_equd',
+         [('PRE_CLOSE_PRICE', 'exchange_pre_close_adj'),
+          ('ACT_PRE_CLOSE_PRICE', 'pre_close'),
+          ('OPEN_PRICE', 'open'),
+          ('HIGHEST_PRICE', 'high'),
+          ('LOWEST_PRICE', 'low'),
+          ('CLOSE_PRICE', 'close'),
+          ('TURNOVER_VOL', 'volume'),
+          ('TURNOVER_VALUE', 'amount'),
+          ('DEAL_AMOUNT', 'deal_num'),
+          ('NEG_MARKET_VALUE', 'mkt_freeshares'),
+          ('MARKET_VALUE', 'mkt_cap_ard'),
+          ('CHG_PCT', 'pct_chg'),
+          ('TURNOVER_RATE', 'turn')]),
+        ('mkt_equd_adj',
+         [('PRE_CLOSE_PRICE_1', 'pre_close_adj'),
+          ('OPEN_PRICE_1', 'open_adj'),
+          ('HIGHEST_PRICE_1', 'high_adj'),
+          ('LOWEST_PRICE_1', 'low_adj'),
+          ('CLOSE_PRICE_1', 'close_adj'),
+          ('TURNOVER_VOL', 'volume_adj')]),
+        ('mkt_equd_eval',
+         [('PE_T', 'pe_ttm'),
+          ('PE_M', 'pe_mrq'),
+          ('PE_CM', 'pe_deducted_mrq'),
+          ('PB', 'pb_lf'),
+          ('PS_T', 'ps_ttm'),
+          ('PS_M', 'ps_mrq'),
+          ('PCF_T', 'pcf_ncf_ttm'),
+          ('PCF_M', 'pcf_ncf_mrq'),
+          ('PCF_OT', 'pcf_ocf_ttm'),
+          ('PCF_OM', 'pcf_ocf_mrq'),
+          ('EV', 'ev'),
+          ('EV_EBITDA', 'ev_2_ebitda'),
+          ('EV_SALES', 'ev_2_sales_ttm')]),
+        ('mkt_equd_ind',
+         [('CHG_STATUS', 'trade_status'),
+          ('CON_CHG', 'con_chg'),
+          ('CON_LIMIT', 'con_limit'),
+          ('DAYS_1', 'days_2_highest'),
+          ('DAYS_2', 'days_new_highest'),
+          ('DAYS_3', 'days_2_lowest'),
+          ('DAYS_4', 'days_new_lowest'),
+          ('DEAL_VALUE', 'deal_value')]),
+        ('mkt_limit',
+         [('LIMIT_UP_PRICE', 'limit_up'),
+          ('LIMIT_DOWN_PRICE', 'limit_down'),
+          ('UP_LIMIT_REACHED_TIMES', 'up_limit_reached_times'),
+          ('DOWN_LIMIT_REACHED_TIMES', 'down_limit_reached_times')]),
+        ('mkt_equ_vwapd', [('VWAP', 'vwap')])
     ]
 
     data_frames = []
@@ -120,12 +123,26 @@ def merge_hermes_daily_data(db: SqlDB,
             start_time=start_time,
             end_time=end_time,
         )
-        # ...
-        df.set_index(['code', 'datetime'])
+
+        exchange_map = {'XSHG': '.SH', 'XSHE': '.SZ'}
+        df = df.assign(
+            code=df['datayes_code'] + df['datayes_exchange_cd'].apply(
+                lambda x: exchange_map.get(x, '')
+            )
+        )
+        df.drop(
+            columns=['datayes_id', 'datayes_code', 'datayes_exchange_cd'],
+            inplace=True
+        )
+        df.rename({'trade_date': 'datetime'}, axis=1, inplace=True)
+        df.set_index(['code', 'datetime'], inplace=True)
         data_frames.append(df)
 
     ret_df = pd.concat(data_frames, axis=1)
-    ret_df.reset_index()
+    ret_df.reset_index(inplace=True)
+    ret_df = ret_df.assign(datetime=ret_df['datetime'].apply(
+        lambda x: date(x.year, x.month, x.day)
+    ))
     return ret_df
 
 

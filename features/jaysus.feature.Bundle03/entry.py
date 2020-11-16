@@ -23,8 +23,6 @@ DAILY_WINDOW_SIZE = timedelta(days=365)
 class App(ModuleApp):
 
     def process(self, queries: List[Query]):
-        reduce_logging()
-
         for q in queries:
             getLogger(__name__).info('received query: %s', q)
             codes = self.s.read_codes(q.code_set)

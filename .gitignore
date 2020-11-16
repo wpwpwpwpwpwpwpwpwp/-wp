@@ -8,6 +8,7 @@
 /config.yml
 /dag.yml
 /var
+debug_out
 
 # exclude any possible data files
 *.csv

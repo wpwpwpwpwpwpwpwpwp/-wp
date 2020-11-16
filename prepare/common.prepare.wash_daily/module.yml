@@ -1,0 +1,6 @@
+name: common.prepare.wash_daily
+version: v1
+description: Wash daily data.
+#container:
+#  type: docker
+#  image_name: qe-runtime

@@ -1,0 +1,9 @@
+name: jaysus.compose.Compose01
+version: v1
+description: Compose the features by tranditional method.
+deps:
+  - id: jaysus.feature.Bundle03@v1
+    window: 0d
+#container:
+#  type: docker
+#  image_name: qe-runtime

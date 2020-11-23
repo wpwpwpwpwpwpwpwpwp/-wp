@@ -3,5 +3,5 @@
 compose:
   method: ic_top_k
   whitelist_features:
-    - "jaysus.feature.Bundle03/main/Tech_*"
-  num_features: 50
+    - "feature.Bundle03/main/Tech_*"
+  num_features: 10

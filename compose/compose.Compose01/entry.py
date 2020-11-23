@@ -30,10 +30,12 @@ class App(ModuleApp):
             df = load_feature_tables(
                 app=self,
                 patterns=[f.name for f in self.model.params.features],
+                codes=q.codes,
+                code_sets=q.code_sets,
                 start_time=q.start_time,
                 end_time=q.end_time,
             )
-
+            print(df)
             # produce the (code, date, score) as result
             result_df = ...
             self.s.write_table(
@@ -49,8 +51,10 @@ class App(ModuleApp):
             df = load_feature_tables(
                 app=self,
                 patterns=[
-                    'jaysus.feature.Bundle03/main/*',
+                    'feature.Bundle03/main/*',
                 ],
+                codes=query.codes,
+                code_sets=query.code_sets,
                 start_time=query.start_time,
                 end_time=query.end_time,
             )
@@ -83,9 +87,13 @@ class App(ModuleApp):
             os.makedirs('./model', exist_ok=True)
             mltk.save_config(model, './model/model.yml', flatten=False)
 
-    def purge_cache(self, code_sets: Optional[List[str]] = None):
+    def purge_cache(self, code_query: Optional[Query] = None):
         for table_name in TableNames.all_table_names():
-            self.s.purge_table(table_name, code_sets)
+            self.s.purge_table(
+                table_name,
+                codes=code_query.codes,
+                code_sets=code_query.code_sets
+            )
 
 
 if __name__ == '__main__':

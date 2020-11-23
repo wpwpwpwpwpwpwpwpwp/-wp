@@ -1,8 +1,9 @@
-name: jaysus.feature.Bundle03
+name: feature.Bundle03
 version: v1
+author: jaysus
 description: Bundle03
 deps:
-  - id: common.prepare.wash_daily@v1
+  - id: prepare.wash_daily@v1
     window: 365d
 #container:
 #  type: docker

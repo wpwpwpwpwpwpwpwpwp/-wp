@@ -1,0 +1,7 @@
+# example config
+
+compose:
+  method: ic_top_k
+  whitelist_features:
+    - "feature.Bundle03/main/Tech_*"
+  num_features: 10

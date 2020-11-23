@@ -457,7 +457,7 @@ class Tech_ASMA_Factor(Factor):
         df = daily_df.copy()
         df.index = df['datetime']
         Tech_ASMA = pd.DataFrame(np.nan, index=df['datetime'], columns=[f'Tech_ASMA_{self.T_list[0]}'])
-        for T in self.T_list[0]:
+        for T in self.T_list:
             Tech_ASMA.loc[:, f'Tech_ASMA_{T}'] = df.volume.rolling(window=T).mean()
 
         return Tech_ASMA

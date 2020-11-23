@@ -1,0 +1,9 @@
+name: feature.Bundle01
+version: v2
+description: Bundle01
+deps:
+  - id: prepare.wash_wind@v1
+    window: 250d
+#container:
+#  type: docker
+#  image_name: qe-runtime

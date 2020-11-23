@@ -6,15 +6,13 @@ from logging import getLogger
 from quant_engine.core import *
 from quant_engine.lib import *
 from quant_engine.typing_ import *
+from quant_engine.utils import *
 
 from lib import *
 
 
-class TableNames(str, Enum):
+class TableNames(BaseTableName):
     MAIN = 'main'
-
-    def __str__(self):
-        return self.value
 
 
 DAILY_WINDOW_SIZE = timedelta(days=365)
@@ -23,24 +21,23 @@ DAILY_WINDOW_SIZE = timedelta(days=365)
 class App(ModuleApp):
 
     def process(self, queries: List[Query]):
-        reduce_logging()
-
         for q in queries:
             getLogger(__name__).info('received query: %s', q)
-            codes = self.s.read_codes(q.code_set)
+            codes = q.codes or self.s.read_codes(q.code_sets)
 
             for code in codes:
                 getLogger(__name__).info('compute daily factors, for code = %s, query = %s', code, q)
-                daily_df = self.deps['common.prepare.wash_daily'].s.read_table(
-                    'main',
+                daily_df = self.deps['prepare.wash_daily'].s.read_table(
+                    TableNames.MAIN,
                     start_time=q.start_time - DAILY_WINDOW_SIZE,
                     end_time=q.end_time,
                     codes=[code],
-                    # columns=[],
                     default_dtype=TableDType.DOUBLE,
-                    ascending=True
                 )
-                daily_df.reset_index(inplace=True)
+
+                # if len(daily_df) == 0:
+                #     #未读到数据, 返回空集合
+                #     continue
 
                 result_df = mp_column_map(factors, daily_df)
                 result_df.reset_index(inplace=True)
@@ -56,12 +53,13 @@ class App(ModuleApp):
                     layout=DataTableLayout.CODE_DATE
                 )
 
-    def train_model(self, query: Query):
-        pass
-
-    def purge_cache(self, code_sets: Optional[List[str]] = None):
-        for table_name in TableNames.__members__:
-            self.s.purge_table(str(table_name), code_sets)
+    def purge_cache(self, code_query: Optional[Query] = None):
+        for table_name in TableNames.all_table_names():
+            self.s.purge_table(
+                table_name,
+                codes=code_query.codes,
+                code_sets=code_query.code_sets
+            )
 
 
 if __name__ == '__main__':

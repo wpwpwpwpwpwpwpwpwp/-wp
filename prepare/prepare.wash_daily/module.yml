@@ -1,0 +1,7 @@
+name: prepare.wash_daily
+version: v1
+author: jaysus
+description: Wash daily data and basic info
+#container:
+#  type: docker
+#  image_name: qe-runtime
